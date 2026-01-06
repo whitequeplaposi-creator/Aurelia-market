@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { getMockProducts, isDemoMode } from '@/lib/mockData';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    // Demo mode - använd mock data
+    if (isDemoMode()) {
+      const products = getMockProducts();
+      return NextResponse.json({ products });
+    }
+
+    // Production mode - använd Supabase
     const { data: products, error } = await supabase
       .from('products')
       .select('*')
