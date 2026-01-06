@@ -11,10 +11,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  // Disable static optimization for all pages to prevent prerender errors
-  experimental: {
-    appDir: true,
-  },
   // Webpack configuration to handle module resolution issues
   webpack: (config) => {
     // Fix for module resolution issues
