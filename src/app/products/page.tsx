@@ -61,7 +61,7 @@ export default function ProductsPage() {
         
         {searchQuery && (
           <p className="mb-6 text-gray-600">
-            Visar {filteredProducts.length} av {products.length} produkter för "{searchQuery}"
+            Visar {filteredProducts.length} av {products.length} produkter för &quot;{searchQuery}&quot;
           </p>
         )}
         

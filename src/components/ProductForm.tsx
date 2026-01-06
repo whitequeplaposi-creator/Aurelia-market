@@ -149,6 +149,7 @@ export default function ProductForm({ product, onSubmit, onCancel }: ProductForm
         {formData.image && (
           <div className="mt-4">
             <p className="text-sm text-gray-600 mb-2">Förhandsvisning:</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={formData.image}
               alt="Preview"

@@ -20,7 +20,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     } else if (user.role !== 'admin') {
       router.push('/');
     }
-  }, [user]);
+  }, [user, router]);
 
   const handleLogout = () => {
     logout();
