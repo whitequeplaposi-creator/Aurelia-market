@@ -7,6 +7,7 @@ import { OrderStatus } from '@/types';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const updateStatusSchema = z.object({
   status: z.enum(['pending', 'paid', 'shipped', 'delivered', 'cancelled']),
