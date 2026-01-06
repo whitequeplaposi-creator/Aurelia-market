@@ -6,6 +6,7 @@ import crypto from 'crypto';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // Kryptera API-nyckel
 function encryptApiKey(apiKey: string): { encrypted: string; iv: string } {
@@ -29,7 +30,7 @@ function encryptApiKey(apiKey: string): { encrypted: string; iv: string } {
 // POST /api/admin/api-keys - Spara krypterad API-nyckel
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAdmin(request);
+    const user = requireAdmin(request);
     
     const body = await request.json();
     const { name, api_key, provider } = body;
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
 // GET /api/admin/api-keys - Lista API-nycklar
 export async function GET(request: NextRequest) {
   try {
-    await requireAdmin(request);
+    requireAdmin(request);
     
     const { data, error } = await supabase
       .from('api_keys')
