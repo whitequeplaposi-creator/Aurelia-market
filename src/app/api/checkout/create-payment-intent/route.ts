@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { getAuthUser } from '@/middleware/auth';
 import { handleApiError, ApiError } from '@/middleware/errorHandler';
 import { z } from 'zod';
+import { isDemoMode, getMockCart, createMockOrder } from '@/lib/mockData';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -18,6 +19,23 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { paymentMethod } = checkoutSchema.parse(body);
 
+    // Demo mode - skapa mock order
+    if (isDemoMode()) {
+      const cartItems = getMockCart(user.userId);
+      
+      if (!cartItems || cartItems.length === 0) {
+        throw new ApiError(400, 'Cart is empty');
+      }
+
+      const order = createMockOrder(user.userId, cartItems);
+
+      return NextResponse.json({
+        clientSecret: 'demo_secret_' + Date.now(),
+        orderId: order.id,
+      });
+    }
+
+    // Production mode - använd Supabase och Stripe
     // Get cart items
     const { data: cartItems, error: cartError } = await (supabaseAdmin as any)
       .from('cart_items')

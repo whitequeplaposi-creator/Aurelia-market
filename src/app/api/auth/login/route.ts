@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { z } from 'zod';
 import { strictRateLimit } from '@/lib/rateLimit';
 import { sanitizeInput } from '@/middleware/security';
+import { isDemoMode, mockDemoUser } from '@/lib/mockData';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -25,6 +26,21 @@ export async function POST(request: NextRequest) {
     const sanitizedBody = sanitizeInput(body);
     const { email, password } = loginSchema.parse(sanitizedBody);
 
+    // Demo mode - returnera mock user
+    if (isDemoMode()) {
+      const token = jwt.sign(
+        { userId: mockDemoUser.id, email: mockDemoUser.email, role: mockDemoUser.role },
+        process.env.JWT_SECRET || 'demo-secret',
+        { expiresIn: '7d' }
+      );
+
+      return NextResponse.json({
+        user: mockDemoUser,
+        token,
+      });
+    }
+
+    // Production mode - använd Supabase
     // Get user
     const { data: user, error } = await (supabaseAdmin as any)
       .from('users')

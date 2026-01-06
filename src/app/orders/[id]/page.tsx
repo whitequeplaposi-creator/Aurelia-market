@@ -148,6 +148,114 @@ export default function OrderDetailPage() {
           </div>
 
           <div className="border-t pt-6">
+            <h2 className="text-2xl font-semibold mb-6">Orderstatus & Spårning</h2>
+            
+            {/* Order tracking progress */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between relative">
+                {/* Progress line */}
+                <div className="absolute top-5 left-0 right-0 h-1 bg-gray-200">
+                  <div
+                    className="h-full bg-gold-500 transition-all duration-500"
+                    style={{
+                      width:
+                        order.status === 'pending'
+                          ? '0%'
+                          : order.status === 'paid'
+                          ? '33%'
+                          : order.status === 'shipped'
+                          ? '66%'
+                          : order.status === 'delivered'
+                          ? '100%'
+                          : '0%',
+                    }}
+                  />
+                </div>
+
+                {/* Status steps */}
+                <div className="relative z-10 flex flex-col items-center">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      ['paid', 'shipped', 'delivered'].includes(order.status)
+                        ? 'bg-gold-500 text-white'
+                        : 'bg-gray-300 text-gray-600'
+                    }`}
+                  >
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <span className="mt-2 text-sm font-medium">Betald</span>
+                </div>
+
+                <div className="relative z-10 flex flex-col items-center">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      ['shipped', 'delivered'].includes(order.status)
+                        ? 'bg-gold-500 text-white'
+                        : 'bg-gray-300 text-gray-600'
+                    }`}
+                  >
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                      <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z" />
+                    </svg>
+                  </div>
+                  <span className="mt-2 text-sm font-medium">Skickad</span>
+                </div>
+
+                <div className="relative z-10 flex flex-col items-center">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      order.status === 'delivered'
+                        ? 'bg-gold-500 text-white'
+                        : 'bg-gray-300 text-gray-600'
+                    }`}
+                  >
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                    </svg>
+                  </div>
+                  <span className="mt-2 text-sm font-medium">Levererad</span>
+                </div>
+              </div>
+
+              {/* Status description */}
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm text-gray-700">
+                  {order.status === 'pending' && (
+                    <>
+                      <strong>Väntar på betalning:</strong> Din order väntar på att betalningen ska bekräftas.
+                    </>
+                  )}
+                  {order.status === 'paid' && (
+                    <>
+                      <strong>Betalning mottagen:</strong> Din betalning har bekräftats och din order förbereds för leverans.
+                    </>
+                  )}
+                  {order.status === 'shipped' && (
+                    <>
+                      <strong>Skickad:</strong> Din order har skickats och är på väg till dig. Förväntad leveranstid: 2-5 arbetsdagar.
+                    </>
+                  )}
+                  {order.status === 'delivered' && (
+                    <>
+                      <strong>Levererad:</strong> Din order har levererats. Tack för ditt köp!
+                    </>
+                  )}
+                  {order.status === 'cancelled' && (
+                    <>
+                      <strong>Avbruten:</strong> Denna order har avbrutits.
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+
             <h2 className="text-2xl font-semibold mb-4">Produkter</h2>
             <div className="space-y-4">
               {order.items?.map((item) => (

@@ -3,12 +3,13 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { getAuthUser } from '@/middleware/auth';
 import { handleApiError, ApiError } from '@/middleware/errorHandler';
 import { z } from 'zod';
+import { isDemoMode, addToMockCart, getMockProduct } from '@/lib/mockData';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
 const addToCartSchema = z.object({
-  productId: z.string().uuid(),
+  productId: z.string(),
   quantity: z.number().int().positive().default(1),
 });
 
@@ -19,6 +20,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { productId, quantity } = addToCartSchema.parse(body);
 
+    // Demo mode - använd mock data
+    if (isDemoMode()) {
+      const product = getMockProduct(productId);
+      if (!product) {
+        throw new ApiError(404, 'Product not found');
+      }
+
+      if (product.stock < quantity) {
+        throw new ApiError(400, 'Insufficient stock');
+      }
+
+      const cartItem = addToMockCart(productId, quantity, user.userId);
+      return NextResponse.json({ item: cartItem }, { status: 201 });
+    }
+
+    // Production mode - använd Supabase
     // Check if product exists and has stock
     const { data: product, error: productError } = await (supabaseAdmin as any)
       .from('products')

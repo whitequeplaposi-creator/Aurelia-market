@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { getAuthUser } from '@/middleware/auth';
 import { handleApiError, ApiError } from '@/middleware/errorHandler';
 import { z } from 'zod';
+import { isDemoMode, updateMockCartItem, removeMockCartItem, getMockCart } from '@/lib/mockData';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -21,6 +22,24 @@ export async function PUT(
     const body = await request.json();
     const { quantity } = updateQuantitySchema.parse(body);
 
+    // Demo mode - använd mock data
+    if (isDemoMode()) {
+      const cartItems = getMockCart(user.userId);
+      const cartItem = cartItems.find(item => item.id === params.id);
+      
+      if (!cartItem) {
+        throw new ApiError(404, 'Cart item not found');
+      }
+
+      if (cartItem.product.stock < quantity) {
+        throw new ApiError(400, 'Insufficient stock');
+      }
+
+      const updatedItem = updateMockCartItem(params.id, quantity);
+      return NextResponse.json({ item: updatedItem });
+    }
+
+    // Production mode - använd Supabase
     // Get cart item
     const { data: cartItem, error: cartError } = await (supabaseAdmin as any)
       .from('cart_items')
@@ -65,6 +84,13 @@ export async function DELETE(
   try {
     const user = getAuthUser(request);
 
+    // Demo mode - använd mock data
+    if (isDemoMode()) {
+      removeMockCartItem(params.id);
+      return NextResponse.json({ message: 'Item removed from cart' });
+    }
+
+    // Production mode - använd Supabase
     const { error } = await (supabaseAdmin as any)
       .from('cart_items')
       .delete()

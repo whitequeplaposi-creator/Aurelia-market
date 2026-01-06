@@ -1,28 +1,71 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
+import { useState } from 'react';
 import Logo from './Logo';
 import { useCartStore } from '@/store/cartStore';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
 
 export default function Header() {
   const totalItems = useCartStore((state) => state.getTotalItems());
   const { user, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleLogout = () => {
     logout();
     router.push('/');
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      router.push('/products');
+    }
+  };
+
+  // Visa sökfält endast på produktsidor
+  const showSearch = pathname === '/products' || pathname?.startsWith('/products');
+
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          <Link href="/">
+        <div className="flex items-center justify-between gap-4">
+          <Link href="/" className="flex-shrink-0">
             <Logo />
           </Link>
+
+          {/* Sökfält - Centralt placerat */}
+          {showSearch && (
+            <form onSubmit={handleSearch} className="flex-1 max-w-md mx-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Sök produkter..."
+                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent"
+                />
+                <svg
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+            </form>
+          )}
 
           <nav className="hidden md:flex items-center space-x-8">
             <Link href="/products" className="text-gray-700 hover:text-gold-600 transition">
@@ -43,7 +86,7 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 hidden lg:inline">
                   {user.email}
                 </span>
                 <button

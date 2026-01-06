@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Layout from '@/components/Layout';
 import ProductList from '@/components/ProductList';
 import { Product } from '@/types';
@@ -9,7 +10,8 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get('search') || '';
 
   useEffect(() => {
     fetchProducts();
@@ -57,36 +59,11 @@ export default function ProductsPage() {
       <div className="container mx-auto px-4 py-12">
         <h1 className="text-4xl font-bold mb-8">Våra Produkter</h1>
         
-        {/* Sökfält */}
-        <div className="mb-8">
-          <div className="relative max-w-md">
-            <input
-              type="text"
-              placeholder="Sök produkter..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent"
-            />
-            <svg
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
-          {searchQuery && (
-            <p className="mt-2 text-sm text-gray-600">
-              Visar {filteredProducts.length} av {products.length} produkter
-            </p>
-          )}
-        </div>
+        {searchQuery && (
+          <p className="mb-6 text-gray-600">
+            Visar {filteredProducts.length} av {products.length} produkter för "{searchQuery}"
+          </p>
+        )}
         
         {filteredProducts.length === 0 ? (
           <div className="text-center py-16">
