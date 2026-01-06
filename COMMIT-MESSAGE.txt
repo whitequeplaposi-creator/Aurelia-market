@@ -1,0 +1,21 @@
+Fix: Explicit Content-Type header i alla auth API svar
+
+Problem:
+- Användare fick "Servern returnerade ett ogiltigt svar" vid registrering
+- Content-Type header sattes inte alltid explicit av NextResponse.json()
+- AuthContext validering misslyckades när Content-Type saknades
+
+Lösning:
+- Lagt till explicit 'Content-Type: application/json' header i ALLA svar
+- Både register och login API:er uppdaterade
+- Alla felfall och success-fall täckta
+
+Ändrade filer:
+- src/app/api/auth/register/route.ts (8 svar uppdaterade)
+- src/app/api/auth/login/route.ts (9 svar uppdaterade)
+- FIX-CONTENT-TYPE-HEADER.md (ny dokumentation)
+
+Testning:
+- Registrering fungerar nu korrekt
+- Alla felmeddelanden visas korrekt
+- Fungerar i både demo mode och production mode

@@ -23,7 +23,10 @@ export async function POST(request: NextRequest) {
     } catch (rateLimitError: any) {
       return NextResponse.json(
         { error: rateLimitError.message || 'För många förfrågningar, försök igen senare' },
-        { status: 429 }
+        { 
+          status: 429,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
@@ -34,7 +37,10 @@ export async function POST(request: NextRequest) {
       console.error('JSON parse error:', jsonError);
       return NextResponse.json(
         { error: 'Ogiltig förfrågan - JSON-fel' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
@@ -49,7 +55,10 @@ export async function POST(request: NextRequest) {
       console.error('Validation error:', validationError);
       return NextResponse.json(
         { error: 'Ogiltig e-postadress eller lösenord (minst 8 tecken krävs)' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
@@ -63,10 +72,15 @@ export async function POST(request: NextRequest) {
         { expiresIn: '7d' }
       );
 
-      return NextResponse.json({
-        user: mockDemoUser,
-        token,
-      });
+      return NextResponse.json(
+        {
+          user: mockDemoUser,
+          token,
+        },
+        {
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     // Production mode - använd Supabase
@@ -80,7 +94,10 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       return NextResponse.json(
         { error: 'E-postadressen är redan registrerad' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
 
@@ -107,16 +124,21 @@ export async function POST(request: NextRequest) {
       { expiresIn: '7d' }
     );
 
-    return NextResponse.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        createdAt: user.created_at,
-        updatedAt: user.updated_at,
+    return NextResponse.json(
+      {
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at,
+        },
+        token,
       },
-      token,
-    });
+      {
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   } catch (error) {
     console.error('Registration error:', error);
     
@@ -124,13 +146,19 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Ogiltig e-postadress eller lösenord' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
     return NextResponse.json(
       { error: 'Registrering misslyckades. Försök igen.' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   }
 }
