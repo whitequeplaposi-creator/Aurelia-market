@@ -1,11 +1,5 @@
 {
-  "buildCommand": "npm install --legacy-peer-deps --prefer-offline && npm run build",
-  "installCommand": "npm install --legacy-peer-deps --prefer-offline",
-  "framework": "nextjs",
-  "regions": ["iad1"],
-  "functions": {
-    "api/**/*.ts": {
-      "maxDuration": 10
-    }
-  }
+  "buildCommand": "npm run build",
+  "installCommand": "npm install --legacy-peer-deps",
+  "framework": "nextjs"
 }
