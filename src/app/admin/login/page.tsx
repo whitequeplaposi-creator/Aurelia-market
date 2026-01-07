@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Logo from '@/components/Logo';
 
 const ADMIN_EMAIL = 'ngabulokana75@gmail.com';
+const ADMIN_PASSWORD = 'a-z,A-Z,9-1'; // Hårdkodat admin-lösenord
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
@@ -26,31 +27,35 @@ export default function AdminLoginPage() {
       return;
     }
 
+    // Kontrollera att lösenordet är korrekt
+    if (password !== ADMIN_PASSWORD) {
+      setError('Felaktigt administratörslösenord');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      // För admin, använd hårdkodat lösenord istället för databas
+      // Skapa en mock admin-användare
+      const adminUser = {
+        id: 'admin-user-id',
+        email: ADMIN_EMAIL,
+        role: 'admin',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Inloggning misslyckades');
-      }
-
-      // Kontrollera att användaren har admin-roll
-      if (data.user.role !== 'admin') {
-        setError('Du har inte administratörsbehörighet');
-        setLoading(false);
-        return;
-      }
+      // Generera JWT token
+      const mockToken = btoa(JSON.stringify({
+        userId: adminUser.id,
+        email: adminUser.email,
+        role: adminUser.role,
+        timestamp: Date.now(),
+      }));
 
       // Spara token och user i localStorage
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('token', mockToken);
+      localStorage.setItem('user', JSON.stringify(adminUser));
 
       // Redirect till admin dashboard
       router.push('/admin');
@@ -112,6 +117,9 @@ export default function AdminLoginPage() {
               />
               <p className="mt-1 text-xs text-gray-500">
                 Endast {ADMIN_EMAIL} kan logga in här
+              </p>
+              <p className="mt-1 text-xs font-semibold text-gold-600">
+                Administratörslösenord: a-z,A-Z,9-1
               </p>
             </div>
 

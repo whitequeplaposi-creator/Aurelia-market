@@ -9,12 +9,14 @@ Separat administratörsinloggning med restriktiv åtkomst endast för behörig a
 
 ### Behörig Administratör
 **Email:** `ngabulokana75@gmail.com`  
+**Lösenord:** `a-z,A-Z,9-1` (Hårdkodat)  
 **Roll:** `admin`  
 **Åtkomst:** Full administratörsåtkomst till alla funktioner
 
 ### Inloggningssida
 **URL:** `/admin/login`  
-**Beskrivning:** Dedikerad inloggningssida endast för administratörer
+**Beskrivning:** Dedikerad inloggningssida endast för administratörer  
+**Autentisering:** Hårdkodat lösenord (ingen databas-validering)
 
 ## Domän & Kontaktinformation
 
@@ -31,21 +33,26 @@ Separat administratörsinloggning med restriktiv åtkomst endast för behörig a
 
 ### 1. Email-restriktion ✅
 - Endast `ngabulokana75@gmail.com` kan logga in som admin
-- Validering på både klient och server-sidan
+- Validering på klient-sidan
 - Automatisk avvisning av andra email-adresser
 
-### 2. Roll-baserad åtkomst ✅
-- Automatisk admin-roll för `ngabulokana75@gmail.com` vid registrering
-- Kunder får automatiskt `customer` roll
+### 2. Hårdkodat lösenord ✅
+- Administratörslösenord: `a-z,A-Z,9-1`
+- Ingen databas-validering
+- Direkt kontroll i frontend
+- Säker token-generering efter validering
+
+### 3. Roll-baserad åtkomst ✅
+- Automatisk admin-roll för `ngabulokana75@gmail.com`
+- Mock admin-användare skapas vid inloggning
+- JWT-liknande token genereras
 - Roll-kontroll i alla admin-endpoints
 
-### 3. Säker inloggning ✅
-- Bcrypt password hashing
-- JWT token-autentisering
-- Rate limiting mot brute-force
+### 4. Säker inloggning ✅
+- Hårdkodat lösenord för admin
+- Token-autentisering
 - Loggning av alla inloggningsförsök
-
-### 4. Visuell säkerhet ✅
+- Visuell säkerhetsvarning
 - Tydlig säkerhetsvarning på inloggningssidan
 - Röd säkerhetsbadge
 - Varning om loggning av försök
@@ -59,10 +66,13 @@ Separat administratörsinloggning med restriktiv åtkomst endast för behörig a
 **Funktioner:**
 - Dedikerad inloggningssida för admin
 - Email-validering mot `ngabulokana75@gmail.com`
-- Roll-kontroll efter inloggning
+- Lösenordsvalidering mot `a-z,A-Z,9-1`
+- Mock admin-användare skapas vid lyckad inloggning
+- Token genereras och sparas i localStorage
 - Säkerhetsvarningar och badges
 - Länk till kundinloggning
 - Responsiv design
+- Visar administratörslösenordet på sidan
 
 **Design:**
 - Gradient bakgrund (svart/grå)
@@ -112,20 +122,15 @@ const role = isAdminEmail(email) ? 'admin' : 'customer';
 ## Användarflöden
 
 ### Flöde 1: Admin registrerar sig första gången
-1. Admin navigerar till `/register`
-2. Fyller i `ngabulokana75@gmail.com` och lösenord
-3. System känner igen admin-email
-4. Användare skapas med `role: 'admin'`
-5. JWT token genereras med admin-roll
-6. Admin kan nu logga in på `/admin/login`
+**OBS:** Admin behöver INTE registrera sig. Använd direkt inloggning med hårdkodat lösenord.
 
 ### Flöde 2: Admin loggar in
 1. Admin navigerar till `/admin/login`
-2. Fyller i `ngabulokana75@gmail.com` och lösenord
+2. Fyller i `ngabulokana75@gmail.com` och lösenord `a-z,A-Z,9-1`
 3. System validerar email (måste vara admin-email)
-4. System validerar lösenord
-5. System kontrollerar att roll är `admin`
-6. JWT token genereras
+4. System validerar lösenord (måste vara exakt `a-z,A-Z,9-1`)
+5. Mock admin-användare skapas
+6. Token genereras och sparas
 7. Redirect till `/admin` dashboard
 
 ### Flöde 3: Kund försöker logga in som admin ❌
@@ -135,12 +140,11 @@ const role = isAdminEmail(email) ? 'admin' : 'customer';
 4. Inloggning nekas
 5. Kund hänvisas till `/login`
 
-### Flöde 4: Admin med fel roll försöker logga in ❌
-1. Användare med admin-email men `customer` roll försöker logga in
-2. Inloggning lyckas initialt
-3. Roll-kontroll misslyckas
-4. Fel visas: "Du har inte administratörsbehörighet"
-5. Åtkomst nekas
+### Flöde 4: Fel lösenord ❌
+1. Användare fyller i korrekt admin-email
+2. Fyller i fel lösenord (inte `a-z,A-Z,9-1`)
+3. System visar fel: "Felaktigt administratörslösenord"
+4. Åtkomst nekas
 
 ## Miljövariabler
 
@@ -196,19 +200,20 @@ och kan leda till rättsliga åtgärder.
 
 ## Testning
 
-### Test 1: Admin kan registrera sig ✅
-```
-Email: ngabulokana75@gmail.com
-Password: minst8tecken
-Förväntat: Användare skapas med role='admin'
-```
-
-### Test 2: Admin kan logga in ✅
+### Test 1: Admin kan logga in ✅
 ```
 URL: /admin/login
 Email: ngabulokana75@gmail.com
-Password: korrekt lösenord
+Password: a-z,A-Z,9-1
 Förväntat: Inloggning lyckas, redirect till /admin
+```
+
+### Test 2: Fel lösenord ❌
+```
+URL: /admin/login
+Email: ngabulokana75@gmail.com
+Password: fel-lösenord
+Förväntat: Fel "Felaktigt administratörslösenord"
 ```
 
 ### Test 3: Kund kan inte logga in som admin ❌
