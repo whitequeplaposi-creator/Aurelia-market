@@ -6,7 +6,7 @@ export const APP_CONFIG = {
   
   // Contact Information
   supportEmail: 'info@aurelia-market.com',
-  adminEmail: 'ngabulokana75@gmail.com',
+  adminEmail: 'ngabulokana@gmail.com',
   
   // Business Information
   companyName: 'Aurelia Market',
@@ -25,7 +25,7 @@ export const APP_CONFIG = {
   
   // Admin Configuration
   admin: {
-    allowedEmail: 'ngabulokana75@gmail.com',
+    allowedEmail: 'ngabulokana@gmail.com',
     loginPath: '/admin/login',
   },
 } as const;
