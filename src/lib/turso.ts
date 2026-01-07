@@ -1,20 +1,11 @@
 import { createClient } from '@libsql/client/web';
 
-// Safe environment variable access
-const getEnvVar = (key: string, fallback: string = ''): string => {
-  if (typeof process === 'undefined') return fallback;
-  return process.env[key] || fallback;
-};
-
-// Check if we're in demo mode
-const isDemoMode = getEnvVar('DEMO_MODE') === 'true';
-
 // Turso database configuration
-const tursoUrl = getEnvVar('TURSO_DATABASE_URL');
-const tursoAuthToken = getEnvVar('TURSO_AUTH_TOKEN');
+const tursoUrl = process.env.TURSO_DATABASE_URL;
+const tursoAuthToken = process.env.TURSO_AUTH_TOKEN;
 
-// Create Turso client (only if not in demo mode)
-export const turso = !isDemoMode && tursoUrl && tursoAuthToken
+// Create Turso client
+export const turso = tursoUrl && tursoAuthToken
   ? createClient({
       url: tursoUrl,
       authToken: tursoAuthToken,
@@ -23,8 +14,14 @@ export const turso = !isDemoMode && tursoUrl && tursoAuthToken
 
 // Helper function to check if database is available
 export function isDatabaseAvailable(): boolean {
-  return !isDemoMode && turso !== null;
+  return turso !== null;
 }
 
-// Export for convenience
-export { isDemoMode };
+// Log configuration status (only in development)
+if (process.env.NODE_ENV === 'development') {
+  console.log('[TURSO] Configuration:', {
+    url: tursoUrl ? 'Set' : 'Not set',
+    token: tursoAuthToken ? 'Set' : 'Not set',
+    available: isDatabaseAvailable(),
+  });
+}

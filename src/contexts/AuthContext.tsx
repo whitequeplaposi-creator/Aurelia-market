@@ -19,22 +19,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Ladda token från localStorage vid start
+  // Load token from localStorage on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+    try {
+      const storedToken = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
+      
+      if (storedToken && storedUser) {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error('[AUTH] Error loading stored auth:', error);
+      // Clear invalid data
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<void> => {
     try {
-      console.log('🔐 Försöker logga in...', { email });
+      console.log('[AUTH] Login attempt for:', email);
       
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -42,100 +49,94 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
+        cache: 'no-store',
       });
 
-      console.log('📡 Svar mottaget:', {
-        status: response.status,
-        statusText: response.statusText,
-        contentType: response.headers.get('content-type'),
-      });
-
-      // Kontrollera om svaret har innehåll
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        console.error('❌ Ogiltigt content-type:', contentType);
-        throw new Error('Servern returnerade ett ogiltigt svar');
-      }
-
-      // Försök att parsa JSON
-      let data;
-      try {
-        const text = await response.text();
-        console.log('📄 Raw response:', text.substring(0, 100) + '...');
-        
-        if (!text || text.trim() === '') {
-          throw new Error('Servern returnerade ett tomt svar');
-        }
-        data = JSON.parse(text);
-        console.log('✅ JSON parsed successfully');
-      } catch (parseError) {
-        console.error('❌ JSON parse error:', parseError);
-        throw new Error('Kunde inte läsa serverns svar');
-      }
+      // Parse response
+      const data = await response.json();
 
       if (!response.ok) {
-        console.error('❌ Login failed:', data.error);
+        console.error('[AUTH] Login failed:', data.error);
         throw new Error(data.error || 'Inloggning misslyckades');
       }
+
+      // Validate response structure
+      if (!data.user || !data.token) {
+        console.error('[AUTH] Invalid response structure:', data);
+        throw new Error('Ogiltigt svar från servern');
+      }
+
+      console.log('[AUTH] Login successful');
       
-      console.log('✅ Login successful!', { userId: data.user?.id, role: data.user?.role });
-      
+      // Update state
       setUser(data.user);
       setToken(data.token);
       
+      // Store in localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      
     } catch (error) {
-      console.error('❌ Login error:', error);
-      throw error;
+      console.error('[AUTH] Login error:', error);
+      
+      // Re-throw with user-friendly message
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Ett oväntat fel uppstod vid inloggning');
     }
   };
 
-  const register = async (email: string, password: string) => {
+  const register = async (email: string, password: string): Promise<void> => {
     try {
+      console.log('[AUTH] Register attempt for:', email);
+      
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
+        cache: 'no-store',
       });
 
-      // Kontrollera om svaret har innehåll
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Servern returnerade ett ogiltigt svar');
-      }
-
-      // Försök att parsa JSON
-      let data;
-      try {
-        const text = await response.text();
-        if (!text || text.trim() === '') {
-          throw new Error('Servern returnerade ett tomt svar');
-        }
-        data = JSON.parse(text);
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        throw new Error('Kunde inte läsa serverns svar');
-      }
+      // Parse response
+      const data = await response.json();
 
       if (!response.ok) {
+        console.error('[AUTH] Registration failed:', data.error);
         throw new Error(data.error || 'Registrering misslyckades');
       }
+
+      // Validate response structure
+      if (!data.user || !data.token) {
+        console.error('[AUTH] Invalid response structure:', data);
+        throw new Error('Ogiltigt svar från servern');
+      }
+
+      console.log('[AUTH] Registration successful');
       
+      // Update state
       setUser(data.user);
       setToken(data.token);
       
+      // Store in localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      
     } catch (error) {
-      console.error('Registration error:', error);
-      throw error;
+      console.error('[AUTH] Registration error:', error);
+      
+      // Re-throw with user-friendly message
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Ett oväntat fel uppstod vid registrering');
     }
   };
 
-  const logout = () => {
+  const logout = (): void => {
+    console.log('[AUTH] Logging out');
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');

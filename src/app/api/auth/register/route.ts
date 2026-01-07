@@ -1,176 +1,144 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { z } from 'zod';
-import { strictRateLimit } from '@/lib/rateLimit';
-import { sanitizeInput } from '@/middleware/security';
-import { isDemoMode, mockDemoUser } from '@/lib/mockData';
 import { turso } from '@/lib/turso';
+import { z } from 'zod';
 import { isAdminEmail } from '@/lib/config';
 
-// Force dynamic rendering
+// Force dynamic rendering for Vercel
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
+// Validation schema
 const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
+  email: z.string().email('Ogiltig e-postadress'),
+  password: z.string().min(8, 'Lösenordet måste vara minst 8 tecken'),
 });
 
-export async function POST(request: NextRequest) {
+// Response type
+interface RegisterResponse {
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  token: string;
+}
+
+interface ErrorResponse {
+  error: string;
+}
+
+export async function POST(request: NextRequest): Promise<NextResponse<RegisterResponse | ErrorResponse>> {
   try {
-    // Rate limiting
-    try {
-      strictRateLimit(request);
-    } catch (rateLimitError: any) {
-      return NextResponse.json(
-        { error: rateLimitError.message || 'För många förfrågningar, försök igen senare' },
-        { 
-          status: 429,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
-    }
-    
-    let body;
-    try {
-      body = await request.json();
-    } catch (jsonError) {
-      console.error('JSON parse error:', jsonError);
-      return NextResponse.json(
-        { error: 'Ogiltig förfrågan - JSON-fel' },
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
-    }
-    
-    // Sanitera input
-    const sanitizedBody = sanitizeInput(body);
-    
-    // Validera input
-    let validatedData;
-    try {
-      validatedData = registerSchema.parse(sanitizedBody);
-    } catch (validationError) {
-      console.error('Validation error:', validationError);
-      return NextResponse.json(
-        { error: 'Ogiltig e-postadress eller lösenord (minst 8 tecken krävs)' },
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
-    }
-    
+    // Parse and validate request body
+    const body = await request.json();
+    const validatedData = registerSchema.parse(body);
     const { email, password } = validatedData;
 
-    // Demo mode - returnera mock user
-    if (isDemoMode()) {
-      const token = jwt.sign(
-        { userId: mockDemoUser.id, email: mockDemoUser.email, role: mockDemoUser.role },
-        process.env.JWT_SECRET || 'demo-secret',
-        { expiresIn: '7d' }
-      );
+    console.log('[REGISTER] Attempt for:', email);
 
-      return NextResponse.json(
-        {
-          user: mockDemoUser,
-          token,
-        },
-        {
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
-    }
-
-    // Production mode - använd Turso
+    // Check if database is available
     if (!turso) {
+      console.error('[REGISTER] Database not available');
       return NextResponse.json(
-        { error: 'Databas ej tillgänglig' },
-        { 
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        }
+        { error: 'Databas ej tillgänglig. Kontakta support.' },
+        { status: 500 }
       );
     }
-    
-    // Check if user exists
+
+    // Check if user already exists
     const existingUserResult = await turso.execute({
-      sql: 'SELECT id FROM users WHERE email = ?',
+      sql: 'SELECT id FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1',
       args: [email]
     });
 
     if (existingUserResult.rows.length > 0) {
+      console.log('[REGISTER] User already exists:', email);
       return NextResponse.json(
         { error: 'E-postadressen är redan registrerad' },
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
+        { status: 400 }
       );
     }
 
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Bestäm roll baserat på email
+    // Determine role based on email
     const role = isAdminEmail(email) ? 'admin' : 'customer';
+
+    console.log('[REGISTER] Creating user with role:', role);
 
     // Create user
     const insertResult = await turso.execute({
-      sql: 'INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?) RETURNING id, email, role, created_at, updated_at',
+      sql: `INSERT INTO users (email, password_hash, role, created_at, updated_at) 
+            VALUES (?, ?, ?, datetime('now'), datetime('now')) 
+            RETURNING id, email, role, created_at, updated_at`,
       args: [email, passwordHash, role]
     });
 
     if (insertResult.rows.length === 0) {
-      throw new Error('Failed to create user');
+      console.error('[REGISTER] Failed to create user');
+      return NextResponse.json(
+        { error: 'Kunde inte skapa användare. Försök igen.' },
+        { status: 500 }
+      );
     }
 
     const user = insertResult.rows[0];
 
-    // Generate JWT
+    // Generate JWT token
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('[REGISTER] JWT_SECRET not configured');
+      return NextResponse.json(
+        { error: 'Server-konfigurationsfel. Kontakta support.' },
+        { status: 500 }
+      );
+    }
+
     const token = jwt.sign(
-      { userId: user.id as string, email: user.email as string, role: user.role as string },
-      process.env.JWT_SECRET!,
+      {
+        userId: user.id,
+        email: user.email,
+        role: user.role
+      },
+      jwtSecret,
       { expiresIn: '7d' }
     );
 
-    return NextResponse.json(
-      {
-        user: {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-          createdAt: user.created_at,
-          updatedAt: user.updated_at,
-        },
-        token,
+    console.log('[REGISTER] Success for:', email);
+
+    // Return success response
+    return NextResponse.json({
+      user: {
+        id: user.id as string,
+        email: user.email as string,
+        role: user.role as string,
+        createdAt: user.created_at as string,
+        updatedAt: user.updated_at as string,
       },
-      {
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
+      token,
+    });
+
   } catch (error) {
-    console.error('Registration error:', error);
-    
-    // Ge mer specifika felmeddelanden
+    // Handle validation errors
     if (error instanceof z.ZodError) {
+      console.error('[REGISTER] Validation error:', error.errors);
+      const firstError = error.errors[0];
       return NextResponse.json(
-        { error: 'Ogiltig e-postadress eller lösenord' },
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
+        { error: firstError.message },
+        { status: 400 }
       );
     }
-    
+
+    // Handle other errors
+    console.error('[REGISTER] Unexpected error:', error);
     return NextResponse.json(
-      { error: 'Registrering misslyckades. Försök igen.' },
-      { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+      { error: 'Ett oväntat fel uppstod. Försök igen.' },
+      { status: 500 }
     );
   }
 }
