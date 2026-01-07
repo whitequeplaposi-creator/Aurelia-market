@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { strictRateLimit } from '@/lib/rateLimit';
 import { sanitizeInput } from '@/middleware/security';
 import { isDemoMode, mockDemoUser } from '@/lib/mockData';
-import { getTursoClient } from '@/lib/turso';
+import { turso } from '@/lib/turso';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -84,10 +84,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Production mode - använd Turso
-    const db = getTursoClient();
+    if (!turso) {
+      return NextResponse.json(
+        { error: 'Databas ej tillgänglig' },
+        { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
     
     // Check if user exists
-    const existingUserResult = await db.execute({
+    const existingUserResult = await turso.execute({
       sql: 'SELECT id FROM users WHERE email = ?',
       args: [email]
     });
@@ -106,7 +114,7 @@ export async function POST(request: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 10);
 
     // Create user
-    const insertResult = await db.execute({
+    const insertResult = await turso.execute({
       sql: 'INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?) RETURNING id, email, role, created_at, updated_at',
       args: [email, passwordHash, 'customer']
     });
