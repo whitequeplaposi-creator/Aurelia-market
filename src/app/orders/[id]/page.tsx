@@ -483,8 +483,8 @@ export default function OrderDetailPage() {
                       Vårt supportteam finns här för att hjälpa dig med frågor om din order.
                     </p>
                     <p className="text-xs text-gray-600">
-                      📧 support@aureliamarket.se<br />
-                      📞 08-123 456 78<br />
+                      📧 info@aurelia-market.com<br />
+                      🌐 www.aurelia-market.com<br />
                       🕐 Mån-Fre 09:00-17:00
                     </p>
                   </div>

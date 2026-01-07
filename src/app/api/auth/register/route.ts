@@ -6,6 +6,7 @@ import { strictRateLimit } from '@/lib/rateLimit';
 import { sanitizeInput } from '@/middleware/security';
 import { isDemoMode, mockDemoUser } from '@/lib/mockData';
 import { turso } from '@/lib/turso';
+import { isAdminEmail } from '@/lib/config';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -113,10 +114,13 @@ export async function POST(request: NextRequest) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
+    // Bestäm roll baserat på email
+    const role = isAdminEmail(email) ? 'admin' : 'customer';
+
     // Create user
     const insertResult = await turso.execute({
       sql: 'INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?) RETURNING id, email, role, created_at, updated_at',
-      args: [email, passwordHash, 'customer']
+      args: [email, passwordHash, role]
     });
 
     if (insertResult.rows.length === 0) {
