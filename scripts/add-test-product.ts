@@ -13,7 +13,7 @@ if (!tursoUrl || !tursoAuthToken) {
 }
 
 async function addTestProduct() {
-  console.log('🧪 Adding test product for payment testing...\n');
+  console.log('🧪 Lägger till testprodukt för betalningstest...\n');
 
   const client = createClient({
     url: tursoUrl!,
@@ -23,12 +23,12 @@ async function addTestProduct() {
   try {
     // Check if test product already exists
     const existing = await client.execute(`
-      SELECT id FROM products WHERE name = 'TEST - Betalningstest 4kr'
+      SELECT id FROM products WHERE name = 'Testprodukt 4kr'
     `);
 
     if (existing.rows.length > 0) {
-      console.log('⚠️  Test product already exists!');
-      console.log('Product ID:', existing.rows[0].id);
+      console.log('⚠️  Testprodukten finns redan!');
+      console.log('Produkt ID:', existing.rows[0].id);
       return;
     }
 
@@ -36,38 +36,34 @@ async function addTestProduct() {
     const result = await client.execute({
       sql: `
         INSERT INTO products (
-          id, name, description, price, image, stock, category, active
+          name, description, price, image, stock, category, active
         ) VALUES (
-          ?, ?, ?, ?, ?, ?, ?, ?
+          ?, ?, ?, ?, ?, ?, ?
         )
       `,
       args: [
-        'test-product-4kr',
-        'TEST - Betalningstest 4kr',
-        '🧪 TESTPRODUKT - Endast för att testa betalningsflödet. Denna produkt kommer att tas bort automatiskt när riktiga produkter läggs till.',
+        'Testprodukt 4kr',
+        'En billig testprodukt för att testa betalningar med Stripe. Perfekt för att verifiera att betalningsflödet fungerar korrekt.',
         4.00,
         'https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=800&h=800&fit=crop',
-        999,
-        'test',
+        100,
+        'Test',
         1
       ]
     });
 
-    console.log('✅ Test product added successfully!');
-    console.log('\n📦 Product Details:');
-    console.log('   ID: test-product-4kr');
-    console.log('   Name: TEST - Betalningstest 4kr');
-    console.log('   Price: 4.00 SEK');
-    console.log('   Stock: 999');
-    console.log('   Category: test');
-    console.log('\n🎯 Next Steps:');
-    console.log('   1. Go to /products to see the test product');
-    console.log('   2. Add it to cart');
-    console.log('   3. Go to checkout');
-    console.log('   4. Complete payment with Stripe');
-    console.log('   5. Verify payment in Stripe Dashboard');
-    console.log('\n⚠️  Remember: This test product will be automatically removed');
-    console.log('   when you add real products using the admin panel.');
+    console.log('✅ Testprodukt tillagd!');
+    console.log('\n📦 Produktdetaljer:');
+    console.log('   Namn: Testprodukt 4kr');
+    console.log('   Pris: 4.00 kr');
+    console.log('   Lager: 100');
+    console.log('   Kategori: Test');
+    console.log('\n🎯 Nästa steg:');
+    console.log('   1. Gå till /products för att se testprodukten');
+    console.log('   2. Lägg till i kundvagn');
+    console.log('   3. Gå till kassan');
+    console.log('   4. Genomför betalning med Stripe');
+    console.log('   5. Verifiera betalning i Stripe Dashboard');
 
   } catch (error: any) {
     console.error('\n❌ Error adding test product:', error.message);
